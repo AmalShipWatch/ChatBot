@@ -12,24 +12,38 @@ class DataStorage:
 
     def generate_dummy_data(self):
         data = []
-        end_date = datetime.now().date() - timedelta(days=1)  # yesterday
-        start_date = end_date - timedelta(days=4)  # previous 5 days from yesterday
-        date_list = [(start_date + timedelta(days=i)) for i in range(5)]
-        report_types = ['At Sea', 'Arrival', 'In Port', 'Arrival At Berth', 'Departure From Berth', 'Departure']
-        for i, dt in enumerate(date_list):
+        report_types = ['At Sea', 'Arrival',  'Arrival At Berth', 'In Port', 'Departure From Berth', 'In Port', 'Departure']
+
+        def random_start_date():
+            return datetime.now().date() - timedelta(days=random.randint(5, 15))
+
+        # Ensure two different start dates
+        start_date1 = random_start_date()
+        while True:
+            start_date2 = random_start_date()
+            if start_date2 != start_date1:
+                break
+
+        # Create date ranges
+        date_list1 = [start_date1 + timedelta(days=i) for i in range(5)]
+        date_list2 = [start_date2 + timedelta(days=i) for i in range(5)]
+
+        for dt in date_list1:
             data.append({
                 'Vessel_name': 'Navig8 Messi',
                 'Date': dt.strftime('%Y-%m-%d'),
                 'Laden_Ballst': 'Laden',
                 'Report_Type': report_types[0]
             })
-        for i, dt in enumerate(date_list):
+
+        for i, dt in enumerate(date_list2):
             data.append({
                 'Vessel_name': 'Navig8 Guard',
                 'Date': dt.strftime('%Y-%m-%d'),
                 'Laden_Ballst': 'Ballast',
-                'Report_Type': report_types[4]
+                'Report_Type': report_types[i+2]
             })
+
         return data
 
     def initialize(self):
