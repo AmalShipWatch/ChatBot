@@ -81,7 +81,7 @@ def check_laden_ballast_change(vessel_history, new_laden_ballast, new_report_typ
     # Only allow Laden/Ballast change after 'Arrival At Berth'
     if len(vessel_history) < 1:
         return True, None
-    prev_status = vessel_history[-1]['Laden_Ballst']
+    prev_status = vessel_history[4]['Laden_Ballst']
     prev_report = vessel_history[-1]['Report_Type']
     if prev_status != new_laden_ballast:
         # Only allow change if previous report was 'Arrival At Berth' or later

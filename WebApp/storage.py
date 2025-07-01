@@ -12,7 +12,7 @@ class DataStorage:
 
     def generate_dummy_data(self):
         data = []
-        report_types = ['At Sea', 'Arrival',  'Arrival At Berth', 'In Port', 'Departure From Berth', 'In Port', 'Departure']
+        report_types = ['At Sea', 'Arrival',  'Arrival At Berth', 'In Port', 'Departure From Berth', 'Departure', 'At Sea']
 
         def random_start_date():
             return datetime.now().date() - timedelta(days=random.randint(5, 15))
@@ -83,6 +83,22 @@ class DataStorage:
             if not updated:
                 # Add as new entry
                 entry['Date'] = entry_date_obj
+                # If Report_Type is missing, set it to the previous entry's Report_Type for this vessel
+                if 'Report_Type' not in entry or not entry['Report_Type']:
+                    # Find the latest entry for this vessel
+                    vessel_entries = [row for row in self._data if row['Vessel_name'] == vessel_name]
+                    if vessel_entries:
+                        # Ensure all dates are date objects for sorting
+                        for row in vessel_entries:
+                            if isinstance(row['Date'], str):
+                                try:
+                                    row['Date'] = datetime.strptime(row['Date'], "%Y-%m-%d").date()
+                                except Exception:
+                                    pass
+                        vessel_entries.sort(key=lambda x: x['Date'], reverse=True)
+                        entry['Report_Type'] = vessel_entries[0].get('Report_Type', 'At Sea')
+                    else:
+                        entry['Report_Type'] = 'At Sea'  # Default if no previous entry
                 self._data.append(entry)
             # Sort vessel entries by date (descending)
             vessel_entries = [row for row in self._data if row['Vessel_name'] == vessel_name]

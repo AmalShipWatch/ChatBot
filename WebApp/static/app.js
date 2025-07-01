@@ -31,8 +31,8 @@ entryForm.addEventListener('submit', async (e) => {
     const entry = {
         Vessel_name: document.getElementById('vesselName').value,
         Date: document.getElementById('date').value,
-        Laden_Ballst: document.getElementById('ladenBallast').value,
-        Report_Type: document.getElementById('reportType').value
+        Laden_Ballst: document.getElementById('ladenBallast').value
+        // Report_Type is omitted from user input
     };
     latestVessel = entry.Vessel_name;
     // Check contradiction
@@ -42,7 +42,7 @@ entryForm.addEventListener('submit', async (e) => {
         body: JSON.stringify({
             vessel_name: entry.Vessel_name,
             new_laden_ballast: entry.Laden_Ballst,
-            new_report_type: entry.Report_Type
+            new_report_type: null // No report type from user
         })
     }).then(r => r.json());
     if (checkRes.is_contradiction) {

@@ -46,11 +46,16 @@ def get_last_known_status_and_report(vessel_history):
 def check_contradiction(req: ContradictionCheckRequest):
     data = storage.get_data()
     vessel_history = [row for row in data if row['Vessel_name'] == req.vessel_name]
+    # If new_report_type is None, fetch the last known report type for this vessel
+    new_report_type = req.new_report_type
+    if not new_report_type:
+        _, prev_report = get_last_known_status_and_report(vessel_history)
+        new_report_type = prev_report or 'At Sea'
     prev_status, prev_report = get_last_known_status_and_report(vessel_history)
-    is_seq_valid, seq_reason = check_report_sequence(vessel_history, req.new_report_type)
-    is_laden_valid, laden_reason = check_laden_ballast_change(vessel_history, req.new_laden_ballast, req.new_report_type)
+    is_seq_valid, seq_reason = check_report_sequence(vessel_history, new_report_type)
+    is_laden_valid, laden_reason = check_laden_ballast_change(vessel_history, req.new_laden_ballast, new_report_type)
     is_contradiction, _, reason = check_for_contradiction(
-        req.vessel_name, req.new_laden_ballast, req.new_report_type, data
+        req.vessel_name, req.new_laden_ballast, new_report_type, data
     )
     initial_message = None
     if not is_seq_valid:
