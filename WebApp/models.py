@@ -6,12 +6,12 @@ class NoonEntry(BaseModel):
     Vessel_name: str
     Date: date
     Laden_Ballst: str
-    Report_Type: str
+    Report_Type: Optional[str] = None
 
 class ContradictionCheckRequest(BaseModel):
     vessel_name: str
     new_laden_ballast: str
-    new_report_type: str
+    new_report_type: Optional[str] = None
 
 class ContradictionCheckResponse(BaseModel):
     is_contradiction: bool
@@ -23,7 +23,7 @@ class ChatRequest(BaseModel):
     vessel_name: str
     previous_status: Optional[str]
     new_status: str
-    new_report_type: str
+    new_report_type: Optional[str] = None
     # date: str  # <-- Add this field
 
 class ChatResponse(BaseModel):

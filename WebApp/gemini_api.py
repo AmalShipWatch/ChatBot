@@ -28,11 +28,10 @@ def generate_chat_response(conversation_history, vessel_name, previous_status, n
     1.  Maintain context of the vessel and the contradiction or rule violation.
     2.  Answer user questions naturally, concisely, and helpfully.
     3.  If the user asks for clarification, provide details about the contradiction or rule violation and why it was flagged.
-    4.  If the user indicates they want to proceed with the new '{new_status}' status or a new report type, set `action` to "proceed".
-    5.  If the user indicates they want to correct the status, set `action` to "correct_status" and identify the `corrected_status` as either "Laden" or "Ballast". If the user says "correct it" but doesn't specify which, ask them to clarify.
-    6.  For any other questions or clarifications, set `action` to "clarify".
+    4.  If the user indicates they want to correct the status, ONLY allow them to enter the correct status, which is '{previous_status}'. Do NOT allow any other status. If the user tries to enter a {new_status}, politely inform them that only '{previous_status}' is allowed due to the contradiction, and prompt them to enter '{previous_status}'.
+    5.  For any other questions or clarifications, set `action` to "clarify".
     Respond ONLY with a JSON object. The JSON object must have the following keys:
-    - `action`: "proceed" | "correct_status" | "correct_report_type" | "clarify"
+    - `action`: "correct_status" | "correct_report_type" | "clarify"
     - `corrected_status`: "Laden" | "Ballast" (only if `action` is "correct_status" and status is specified)
     - `bot_response`: A natural language response to the user.
     """
@@ -47,6 +46,11 @@ def generate_chat_response(conversation_history, vessel_name, previous_status, n
         if response_text.startswith("```json") and response_text.endswith("```"):
             response_text = response_text[7:-3].strip()
         parsed_response = json.loads(response_text)
+        # Enforce only previous_status is allowed as correction
+        if parsed_response.get("action") == "correct_status":
+            if parsed_response.get("corrected_status") != previous_status:
+                parsed_response["corrected_status"] = previous_status
+                parsed_response["bot_response"] = f"Only '{previous_status}' is allowed as the correct status due to the contradiction."
         return parsed_response
     except Exception as e:
         return {
@@ -58,7 +62,7 @@ def generate_initial_polite_message(vessel_name, prev_status, new_status, date_s
     if seq_reason:
         # Report type issue: Only mention report type, sequence, and allowed types. No status, no correction question.
         initial_message_prompt = f"""
-        You are a helpful and polite assistant for a maritime data entry system. A user (Vessel Master) is entering data for vessel '{vessel_name}' for the date {date_str}.
+        You are a helpful and polite assistant for a maritime data entry system. A user (Vessel Master) is entering data for vessel '{vessel_name}'.
         A report type sequence issue was detected.
         
         Please craft a concise, natural, and clear message to the user explaining the specific report type issue. Do NOT mention Laden/Ballast status or ask for further corrections.
@@ -70,7 +74,7 @@ def generate_initial_polite_message(vessel_name, prev_status, new_status, date_s
         Do not start with phrases like "Okay, here's the message tailored to the user's specific scenario:".
         
         Example desired tone:
-        "Hey Master, I've noticed an issue with the report type you've entered for {vessel_name} on {date_str}.
+        "Hey Master, I've noticed an issue with the report type you've entered for {vessel_name}.
         - The report type you entered is '{report_type}'.
         - {seq_reason}"
         """
@@ -79,19 +83,18 @@ def generate_initial_polite_message(vessel_name, prev_status, new_status, date_s
         initial_message_prompt = f"""
         You are a helpful and polite assistant for a maritime data entry system. A user (Vessel Master) is trying to enter noon data.
         The vessel '{vessel_name}' has consistently been recorded as '{prev_status}' in its last entries, but the new entry suggests it is now '{new_status}'.
-        The latest entry date is {date_str}.
         Please craft a very polite, conversational, and concise initial message to the user, strictly limited to one or two sentences.
         Start with a soft apology like \"Hey Master,\" or similar.
-        Clearly state the observed change in 'Laden/Ballst' status for the vessel '{vessel_name}' on the given date and mention the report type.
+        Clearly state the observed change in 'Laden/Ballst' status for the vessel '{vessel_name}' and mention the report type.
         Then, mention that your analysis of previous entries shows the consistent '{prev_status}' status.
         If there is a report type sequence or status change rule violation, explain it clearly and politely."
         """
         initial_message_prompt += f"\nNote: {laden_reason}"
         initial_message_prompt += "\nFinally, ask if they would like to review or correct this change status. Just need to raise the flag if the contradiction happens for report type."
-        initial_message_prompt += f"\n\nExample desired tone: 'Hey Master, I noticed a change in the 'Laden/Ballast' status for '{vessel_name}' from '{prev_status}' to '{new_status}' on {date_str}. When I analyze report type entries, it is supposed to be '{prev_status}'. Would you like to review this change?'"
+        initial_message_prompt += f"\n\nExample desired tone: 'Hey Master, I noticed a change in the 'Laden/Ballast' status for '{vessel_name}' from '{prev_status}' to '{new_status}'. When I analyze report type entries, it is supposed to be '{prev_status}'. Would you like to review this change?'"
     else:
         # Fallback for generic or unexpected cases
-        return (f"We noticed a potential issue for **{vessel_name}** on {date_str}. "
+        return (f"We noticed a potential issue for **{vessel_name}**. "
                 f"The new entry is **{new_status}** with report type **{report_type}**, "
                 f"while previous entries were **{prev_status}**. Please review this entry.")
 
@@ -99,11 +102,11 @@ def generate_initial_polite_message(vessel_name, prev_status, new_status, date_s
         initial_polite_message = model.generate_content(initial_message_prompt).text
     except Exception as e:
         if seq_reason:
-            initial_polite_message = (f"There is a report type issue for **{vessel_name}** on {date_str}.\n"
+            initial_polite_message = (f"There is a report type issue for **{vessel_name}**.\n"
                                       f"- You entered: **{report_type}**.\n"
                                       f"- {seq_reason}\n")
         elif laden_reason:
-            initial_polite_message = (f"There is a status change for **{vessel_name}** on {date_str}.\n"
+            initial_polite_message = (f"There is a status change for **{vessel_name}**.\n"
                                       f"- New status: **{new_status}**\n"
                                       f"- Previous status: **{prev_status}**\n"
                                       f"Is this change correct?")
