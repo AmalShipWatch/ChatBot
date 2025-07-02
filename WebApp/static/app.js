@@ -35,6 +35,27 @@ entryForm.addEventListener('submit', async (e) => {
         // Report_Type is omitted from user input
     };
     latestVessel = entry.Vessel_name;
+    // newly modified
+    // --- Date validation before backend call ---
+    const vessel = entry.Vessel_name;
+    const res = await fetch('/get_last_dates');
+    const lastDates = await res.json();
+    const lastDate = lastDates[vessel];
+    if (lastDate) {
+        const d1 = new Date(lastDate);
+        const allowedDates = [
+            new Date(d1.getTime() + 24*60*60*1000),
+            new Date(d1.getTime() + 2*24*60*60*1000)
+        ];
+        const allowedStr = allowedDates.map(d => d.toISOString().split('T')[0]);
+        if (!allowedStr.includes(entry.Date)) {
+            alert('You can only select the next two days after the last entry for this vessel.');
+            return;
+        }
+    }
+    // --- End date validation ---
+    // end of newly modified
+    
     // Check contradiction
     const checkRes = await fetch(`/check_contradiction`, {
         method: 'POST',
@@ -166,3 +187,37 @@ function renderNoonData(data) {
     html += '</tbody></table>';
     noonDataDiv.innerHTML = html;
 }
+
+// Newly modified
+document.getElementById('vesselName').addEventListener('change', async function() {
+    const vessel = this.value;
+    const res = await fetch('/get_last_dates');
+    const lastDates = await res.json();
+    const lastDate = lastDates[vessel];
+    const dateInput = document.getElementById('date');
+    if (lastDate) {
+        const d1 = new Date(lastDate);
+        const allowedDates = [
+            new Date(d1.getTime() + 24*60*60*1000) // +1 day
+            // new Date(d1.getTime() + 2*24*60*60*1000) // +2 days
+        ];
+        // Format as yyyy-mm-dd
+        const allowedStr = allowedDates.map(d => d.toISOString().split('T')[0]);
+        dateInput.value = '';
+        dateInput.setAttribute('min', allowedStr[0]);
+        // dateInput.setAttribute('max', allowedStr[1]);
+        dateInput.oninput = function() {
+            if (!allowedStr.includes(this.value)) {
+                this.setCustomValidity('You can only select the next two days after the last entry.');
+            } else {
+                this.setCustomValidity('');
+            }
+        };
+    } else {
+        // If no last date, allow any date (or set your own logic)
+        dateInput.removeAttribute('min');
+        // dateInput.removeAttribute('max');
+        dateInput.oninput = null;
+    }
+});
+// end of newly modified

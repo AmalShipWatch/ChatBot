@@ -26,7 +26,8 @@
         <form id="entryForm" class="mb-4">
             <div class="mb-3">
                 <label class="form-label">Vessel Name</label>
-                <select class="form-control" id="vesselName" required>
+                <select class="form-control" id="vesselName" required style="appearance: none;">
+                    <option value="" disabled selected hidden>Select Vessel ▼</option>
                     <option value="Navig8 Messi">Navig8 Messi</option>
                     <option value="Navig8 Guard">Navig8 Guard</option>
                 </select>
@@ -38,7 +39,8 @@
             </div>
             <div class="mb-3">
                 <label class="form-label">Laden/Ballast</label>
-                <select class="form-select" id="ladenBallast">
+                <select class="form-select" id="ladenBallast" required style="appearance: none;">
+                    <option value="" disabled selected hidden>Select Status ▼</option>
                     <option value="Laden">Laden</option>
                     <option value="Ballast">Ballast</option>
                 </select>

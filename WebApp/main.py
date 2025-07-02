@@ -98,3 +98,18 @@ def chat_response(req: ChatRequest):
 def get_noon_data():
     data = storage.get_data()
     return NoonDataResponse(data=data)
+# newly modified
+@app.get("/get_last_dates")
+def get_last_dates():
+    data = storage.get_data()
+    last_dates = {}
+    for row in data:
+        vessel = row['Vessel_name']
+        date_val = row['Date']
+        if isinstance(date_val, str):
+            date_val = datetime.strptime(date_val, "%Y-%m-%d").date()
+        if vessel not in last_dates or date_val > last_dates[vessel]:
+            last_dates[vessel] = date_val
+    # Return as ISO strings
+    return {v: d.isoformat() for v, d in last_dates.items()}
+# end of newly modified
